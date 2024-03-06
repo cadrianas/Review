@@ -4,7 +4,7 @@ nltk.download()
 import pandas as pd
 from gensim.summarization import summarize
 #Load the data
-data = pd.read_csv('output_V2.csv')
+data = pd.read_csv('papers.csv')
 # Preprocess the data. Ensure that the abstracts are not empty and handle any missing values:
 data = data.dropna(subset=['abstract'])
 # Summarize using Gensim

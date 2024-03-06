@@ -1,17 +1,17 @@
 import requests
 import json
 
-query = "(covid 19 modeling)| (covid 19 modelling) | (covid 19 bayesian inference) | (sars cov 2 modeling) | (sars cov 2 modelling) | (sars cov 2 bayesian inference) | (covid 19 case infection) | (sars cov 2 case infection) | (covid 19 mathematical modeling) | (sars cov 2 matheamtical modeling) | (sars cov 2 variance of concern) | (covid 19 variance of concern)"
-fields = "title,abstract,publicationDate,citationCount,authors,openAccessPdf"
+query = "(covid 19 metapupulation)| (sars cov 2 metapopulation) | (covid 19 modeling) | (covid 19 modelling) | (covid 19 bayesian inference) | (sars cov 2 modeling) | (sars cov 2 modelling) | (sars cov 2 bayesian inference) | (covid 19 case infection) | (sars cov 2 case infection) | (covid 19 mathematical modeling) | (sars cov 2 matheamtical modeling) | (sars cov 2 variance of concern) | (covid 19 variance of concern)"
+fields = "title,abstract,publicationDate,publicationTypes,journal,publicationVenue,authors,openAccessPdf,citationStyles"
 fields_of_study = "Mathematics"
 
 url = f"http://api.semanticscholar.org/graph/v1/paper/search/bulk?query={query}&fields={fields}&fieldsOfStudy={fields_of_study}"
 r = requests.get(url).json()
 
-print(f"Will retrieve an estimated {r['total']} documents")
+##print(f"Will retrieve an estimated {r['total']} documents")
 retrieved = 0
 
-with open(f"papers_V2.jsonl", "a") as file:
+with open(f"papers_V4.jsonl", "a") as file:
     while True:
         if "data" in r:
             retrieved += len(r["data"])
