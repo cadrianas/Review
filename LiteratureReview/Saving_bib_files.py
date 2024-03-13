@@ -28,12 +28,29 @@ def save_citation_bib_files(csv_file):
                     os.makedirs(folder_path)
                 bib_file_path = os.path.join(folder_path, f"{citation_key}.bib")
                 with open(bib_file_path, 'w') as bib_file:
-                    # Preserve original line breaks, add comma after year if not present, and append URL
-                    modified_bibtex = re.sub(r'(year\s*=\s*{\d+})(.*?)(,\s*?)?(\s*?})', r'\1,\n  url = {' + row['openAccessPdf'] + '}\n}\4', citation_bibtex, flags=re.DOTALL)
+                    # Add URL entry only if it's not empty
+                    if row['openAccessPdf'].strip():  # Check if URL is not empty
+                        modified_bibtex = re.sub(r'year\s*=\s*{\d+}', f'year = {{{year}}},\nurl = {{{row["openAccessPdf"].rstrip(",")}}},', citation_bibtex)
+                        # Add abstract if available
+                        if row['abstract'].strip():  # Check if abstract is not empty
+                            modified_bibtex = modified_bibtex[:-2] + f',\n  abstract = {{{row["abstract"]}}}\n}}'
+                    else:
+                        modified_bibtex = citation_bibtex  # Keep the original BibTeX if URL is empty
                     bib_file.write(modified_bibtex)
 
 # Usage
 csv_file = 'classification_results_bibtex.csv'
 save_citation_bib_files(csv_file)
+
+
+
+
+
+
+
+
+
+
+
 
 

@@ -7,11 +7,11 @@ from transformers import PegasusTokenizer, PegasusForConditionalGeneration, T5To
 pd.set_option('display.max_colwidth', None)
 
 # Load data
-data = pd.read_csv('outputs/classification_results.csv')
+data = pd.read_csv('outputs/SIR_type_bibtex.csv')
 
 # Define summarization function, we use top_n to be 5, so we only want to take
 # the 5 most important sentences
-def combined_summarization(document, model_name, model_type, top_n=4):
+def combined_summarization(document, model_name, model_type, top_n=3):
     # Handle NaN values
     if pd.isna(document):
         return "No content to summarize."
@@ -56,6 +56,6 @@ for model_name, (model_path, model_type) in models.items():
     data[f'summary_{model_name}'] = data['abstract'].apply(lambda x: combined_summarization(x, model_path, model_type))
 
 # Save the results in a single CSV file
-output_csv = os.path.join(output_folder, 'Results.csv')
+output_csv = os.path.join(output_folder, 'SIR_type_bibtex_sum.csv')
 data.to_csv(output_csv, index=False)
 print(f"Summaries saved to '{output_csv}'.")
