@@ -1,90 +1,77 @@
 import os
 import pandas as pd
-from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.lsa import LsaSummarizer
+import numpy as np
+from transformers import BertTokenizer, BertForSequenceClassification, PegasusTokenizer, PegasusForConditionalGeneration
+from summarizer import Summarizer
 from multiprocessing import Pool
-import nltk
-
- nltk.download('punkt')
 
 # Set display options
 pd.set_option('display.max_colwidth', None)
 
 # Load data
-data = pd.read_csv('outputs/classification_results_bibtex.csv')
-
+data = pd.read_csv('LiteratureReview/classification_results_bibtex.csv')
 
 # Define summarization function
-def combined_summarization(document, model_name, max_sentences=4):
+def combined_summarization(document, model_name, model_type='BERT', top_n=3):
     # Handle NaN values
-    if pd.isna(document):
+    if document.isna().any():
         return "No content to summarize."
 
     # Convert abstract to string
     document = str(document)
 
-    # Initialize summarization pipeline
-    summarization_pipeline = pipeline("summarization", model=model_name)
+    # Load pre-trained models and tokenizers
+    extractive_model = Summarizer()
+    if model_type == 'BERT':
+        tokenizer = BertTokenizer.from_pretrained(model_name)
+        model = BertForSequenceClassification.from_pretrained(model_name)
+    elif model_type == 'Pegasus':
+        tokenizer = PegasusTokenizer.from_pretrained(model_name)
+        model = PegasusForConditionalGeneration.from_pretrained(model_name)
+    else:
+        raise ValueError("Invalid model type. Choose 'BERT' or 'Pegasus'.")
 
     # Extractive summarization
-    parser = PlaintextParser.from_string(document, Tokenizer("english"))
-    summarizer = LsaSummarizer()
-    extractive_summary = []
-    for sentence in summarizer(parser.document, max_sentences):
-        extractive_summary.append(sentence.__str__())
+    extractive_summary = extractive_model(document, num_sentences=top_n)
 
-    # Combine extractive and abstractive summaries
-    extractive_text = ' '.join(extractive_summary)
-    abstractive_summary = summarization_pipeline(extractive_text, max_length=100, min_length=50, do_sample=False)
+    # Tokenize input for model
+    inputs = tokenizer(extractive_summary, return_tensors="pt", truncation=True, max_length=512)
 
-    return abstractive_summary[0]['summary_text']
+    # Perform sequence classification or conditional generation
+    if model_type == 'BERT':
+        outputs = model(**inputs)
+        logits = outputs.logits
+        probabilities = logits.softmax(dim=-1)
+        summary_class = probabilities.argmax().item()
+        summary_label = model.config.id2label[summary_class]
+        return summary_label
+    elif model_type == 'Pegasus':
+        summary_ids = model.generate(inputs['input_ids'], max_length=100, min_length=50, length_penalty=2.0, num_beams=4, early_stopping=True)
+        summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+        return summary
 
+# Define a function to process each row in parallel
+def process_row(row):
+    row['summary_BERT'] = combined_summarization(row['abstract'], 'bert-base-uncased', 'BERT')
+    row['summary_Pegasus'] = combined_summarization(row['abstract'], 'google/pegasus-xsum', 'Pegasus')
+    return row
 
-# Function to apply summarization in parallel
-def parallel_summarization(data_chunk):
-    for model_name, (model_path, model_type) in models.items():
-        if model_type == 'transformers':
-            tokenizer = AutoTokenizer.from_pretrained(model_path)
-            model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
-            summarization_pipeline = pipeline("summarization", model=model, tokenizer=tokenizer)
-        else:
-            summarization_pipeline = pipeline("summarization", model=model_path)
+if __name__ == '__main__':
+    # Determine number of processes to use
+    num_processes = os.cpu_count() - 1
 
-        data_chunk[model_name] = data_chunk['abstract'].apply(
-            lambda x: combined_summarization(x, summarization_pipeline))
-    return data_chunk
+    # Split the data into chunks for parallel processing
+    data_split = np.array_split(data, num_processes)
 
+    # Create a pool of worker processes
+    with Pool(num_processes) as pool:
+        # Process each chunk of data in parallel
+        processed_data = pool.map(process_row, data_split)
 
-# Generate summaries in parallel
-output_folder = 'outputs'
-if not os.path.exists(output_folder):
-    os.makedirs(output_folder)
+    # Concatenate the processed chunks back into a single DataFrame
+    processed_data = pd.concat(processed_data)
 
-# Define number of processes
-num_processes = os.cpu_count() - 1  # Number of CPU cores minus one
-
-# Split data into chunks for parallel processing
-chunk_size = len(data) // num_processes
-data_chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
-
-# Define summarization models
-models = {
-    'BART': ('facebook/bart-large-cnn', 'transformers'),
-    'Pegasus-XSUM': ('google/pegasus-xsum', 'transformers'),
-    'BERT': ('bert-base-uncased', 'transformers')
-}
-
-# Create a pool of processes
-with Pool(num_processes) as pool:
-    # Map the parallel_summarization function to each data chunk
-    processed_data = pool.map(parallel_summarization, data_chunks)
-
-# Concatenate the processed data chunks back into a single DataFrame
-processed_data = pd.concat(processed_data)
-
-# Save the results in a single CSV file
-output_csv = os.path.join(output_folder, 'classification_results_bibtex_sum.csv')
-processed_data.to_csv(output_csv, index=False)
-print(f"Summaries saved to '{output_csv}'.")
+    # Save the results in a single CSV file
+    output_csv = 'outputs/classification_results_bibtex_sum.csv'
+    processed_data.to_csv(output_csv, index=False)
+    print(f"Summaries saved to '{output_csv}'.")
