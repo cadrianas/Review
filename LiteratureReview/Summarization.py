@@ -1,19 +1,8 @@
 import pandas as pd
 from transformers import BartTokenizer, BartForConditionalGeneration, PegasusTokenizer, PegasusForConditionalGeneration
+import argparse
 
-# Load data
-data = pd.read_csv('LiteratureReview/classification_results_bibtex.csv')
-
-# Load Pegasus tokenizer and model for summarization
-pegasus_tokenizer = PegasusTokenizer.from_pretrained('google/pegasus-xsum')
-pegasus_model = PegasusForConditionalGeneration.from_pretrained('google/pegasus-xsum')
-
-# Load BART tokenizer and model for summarization
-bart_tokenizer = BartTokenizer.from_pretrained('facebook/bart-large-cnn')
-bart_model = BartForConditionalGeneration.from_pretrained('facebook/bart-large-cnn')
-
-
-def bart_summarization(document):
+def bart_summarization(document, bart_tokenizer, bart_model):
     if pd.isna(document):
         return "No content to summarize."
 
@@ -25,7 +14,7 @@ def bart_summarization(document):
     return summary
 
 
-def pegasus_summarization(document):
+def pegasus_summarization(document, pegasus_tokenizer, pegasus_model):
     if pd.isna(document):
         return "No content to summarize."
 
@@ -36,14 +25,34 @@ def pegasus_summarization(document):
 
     return summary
 
+def main(args):
+    # Load data
+    data = pd.read_csv(args.input_csv)
 
-# Generate summaries for each document using BERT
-data['summary_BART'] = data['abstract'].apply(bart_summarization)
+    # Load Pegasus tokenizer and model for summarization
+    pegasus_tokenizer = PegasusTokenizer.from_pretrained(args.pegasus_model)
+    pegasus_model = PegasusForConditionalGeneration.from_pretrained(args.pegasus_model)
 
-# Generate summaries for each document using Pegasus
-data['summary_Pegasus'] = data['abstract'].apply(pegasus_summarization)
+    # Load BART tokenizer and model for summarization
+    bart_tokenizer = BartTokenizer.from_pretrained(args.bart_model)
+    bart_model = BartForConditionalGeneration.from_pretrained(args.bart_model)
 
-# Save the results in a single CSV file
-output_csv = 'LiteratureReview/outputs/classification_results_bibtex_sum.csv'
-data.to_csv(output_csv, index=False)
-print(f"Summaries saved to '{output_csv}'.")
+    # Generate summaries for each document using BERT
+    data['summary_BART'] = data['abstract'].apply(lambda x: bart_summarization(x, bart_tokenizer, bart_model))
+
+    # Generate summaries for each document using Pegasus
+    data['summary_Pegasus'] = data['abstract'].apply(lambda x: pegasus_summarization(x, pegasus_tokenizer, pegasus_model))
+
+    # Save the results in a single CSV file
+    data.to_csv(args.output_csv, index=False)
+    print(f"Summaries saved to '{args.output_csv}'.")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generate summaries for documents using BART and Pegasus models.")
+    parser.add_argument("input_csv", type=str, help="Path to the input CSV file containing document data.")
+    parser.add_argument("output_csv", type=str, help="Path to save the output CSV file with summaries.")
+    parser.add_argument("--bart_model", type=str, default='facebook/bart-large-cnn', help="Pretrained BART model name or path.")
+    parser.add_argument("--pegasus_model", type=str, default='google/pegasus-xsum', help="Pretrained Pegasus model name or path.")
+    args = parser.parse_args()
+
+    main(args)
