@@ -22,7 +22,7 @@ def summarize_bib_file(ollama_client, file_path, output_dir):
     summary = summary_response['message']['content']
 
     # Write data to CSV
-    output_file = os.path.join(output_dir, "output_SIR_Type.csv")
+    output_file = os.path.join(output_dir, "output_ollama.csv")
     with open(output_file, 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow([summary, content])
@@ -34,7 +34,7 @@ def main():
 
     # Create the CSV file with header
     os.makedirs(output_dir, exist_ok=True)  # Create directory if it doesn't exist
-    with open(os.path.join(output_dir, "output_SIR_Type.csv"), 'w', newline='') as csvfile:
+    with open(os.path.join(output_dir, "output_ollama.csv"), 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["Summary", "Content"])
 
@@ -42,7 +42,7 @@ def main():
     ollama_client = ollama.Client()
 
     # Find bib files in all subdirectories
-    for root, dirs, files in os.walk("Bib-files/SIR-Type/deterministic/"):
+    for root, dirs, files in os.walk("Bib-files"):
         for file in files:
             if file.endswith(".bib"):
                 file_path = os.path.join(root, file)
