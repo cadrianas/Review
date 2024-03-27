@@ -17,7 +17,7 @@ def summarize_bib_file(ollama_client, file_path, output_dir):
     # Summarize using Ollama
     summary_response = ollama_client.chat(
         model='llama2:13b',
-        messages=[{'role': 'user', 'content': f'Summarize the following text in 200 words or less; include author names: {content}'}]
+        messages=[{'role': 'user', 'content': f'Summarize the following text in 200 words or less; include author names, do not say anything but the summary: {content}'}]
     )
     summary = summary_response['message']['content']
 
