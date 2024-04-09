@@ -1,12 +1,14 @@
 import pandas as pd
 import re
+import os
 
-output_dir = "outputs"
+# Define the output directory
+output_dir = "/home/cadrianas/github/Review/LiteratureReview/outputs"
 os.makedirs(output_dir, exist_ok=True)  # Create the directory if it doesn't exist
 
-
 # Load the CSV file
-df = pd.read_csv('/home/cadrianas/github/Review/LiteratureReview/outputs/output_ollama.csv')
+input_file_path = os.path.join(output_dir, 'output_ollama.csv')
+df = pd.read_csv(input_file_path)
 
 # Define a function to extract citation from "Content" column
 def extract_citation(content):
@@ -19,13 +21,11 @@ def extract_citation(content):
 # Apply the function to create the "citation" column
 df['citation'] = df['Content'].apply(extract_citation)
 
-# Remove the unnecessary text from "Summary" column
-pattern = r'^(Sure! Here is a summary of the text|No problem; here is a summary of the text|Sure, here\'s the summary you requested|Sure! Here is the summary of the text you provided|Sure! Here is the summary of the text in 200 words or less|Sure! Here is the summary of the text in 200 words or less, including author names but not saying anything):'
-df['Summary'] = df['Summary'].str.replace(pattern, '', regex=True)
+# Apply the text cleaning to remove unnecessary text from "Summary" column
+df['Summary'] = df['Summary'].str.replace(r'^.*?:', '', regex=True)
+
 # Save the cleaned DataFrame into a new CSV file in the output directory
-cleaned_file_path = os.path.join(output_dir, 'Ollama_outputs_cleaned.csv')
+cleaned_file_path = os.path.join(output_dir, 'cleaned_output_ollama.csv')
 df.to_csv(cleaned_file_path, index=False)
 
-
-
-print(f"Cleaned data saved to {cleaned_file_path}")
+print(f"\nCleaned data saved to {cleaned_file_path}")
