@@ -24,8 +24,10 @@ df['citation'] = df['Content'].apply(extract_citation)
 # Apply the text cleaning to remove unnecessary text from "Summary" column
 df['Summary'] = df['Summary'].str.replace(r'^.*?:', '', regex=True)
 
-# Save the cleaned DataFrame into a new CSV file in the output directory
-cleaned_file_path = os.path.join(output_dir, 'cleaned_output_ollama.csv')
-df.to_csv(cleaned_file_path, index=False)
+# Create a new column by concatenating "Summary" and citation with \cite{}
+df['Summary_with_citation'] = df['Summary'] + r' \cite{' + df['citation'] + '}'
 
-print(f"\nCleaned data saved to {cleaned_file_path}")
+# Save the DataFrame with the new column into the same CSV file
+output_file_path = os.path.join(output_dir, 'combined_output_ollama.csv')
+df.to_csv(output_file_path, index=False)
+print(f"\nCombined data saved to {output_file_path}")
