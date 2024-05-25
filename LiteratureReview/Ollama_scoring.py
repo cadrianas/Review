@@ -113,7 +113,7 @@ def grade_articles(input_csv, output_csv):
             ])
 
 if __name__ == "__main__":
-    input_csv = "outputs/combined_outputs_ollama.csv"
+    input_csv = "outputs/combined_output_ollama.csv"
     output_csv = "graded_outputs_ollama.csv"
     grade_articles(input_csv, output_csv)
 
