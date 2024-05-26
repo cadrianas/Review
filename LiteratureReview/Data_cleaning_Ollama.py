@@ -20,10 +20,12 @@ def extract_citation(content):
 
 # Define a function to extract URLs from "Content" column
 def extract_url(content):
-    url_pattern = r'(https?://\S+)'
+    url_pattern = r'(https?://[^\s]+)'
     match = re.search(url_pattern, content)
     if match:
-        return match.group(1)
+        # Strip trailing punctuation if any
+        url = match.group(1).rstrip('.,;}')
+        return url
     else:
         return None
 
