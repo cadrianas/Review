@@ -54,8 +54,8 @@ def process_csv(csv_file, output_dir):
 
 if __name__ == "__main__":
     # Define your CSV file and output directory
-    csv_file = 'top_25_papers.csv'
-    output_directory = 'Review Top 25'
+    csv_file = 'combined_output_ollama.csv'
+    output_directory = 'PDF'
 
     # Create output directory if not exists
     os.makedirs(output_directory, exist_ok=True)
