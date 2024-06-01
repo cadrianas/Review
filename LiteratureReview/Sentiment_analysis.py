@@ -1,98 +1,85 @@
-# there are several transformer models that support more than 512 tokens.
-# Some notable ones include Longformer, BigBird, and LED (Longformer Encoder-Decoder).
-# These models are specifically designed to handle longer sequences.
-#
-# Longformer model for both sentiment analysis
-# and question answering, as it supports longer sequences. The maximum token length for
-# Longformer can be up to 4096 tokens, which should be sufficient for most abstracts.
-
-
 import pandas as pd
-from transformers import LongformerTokenizer, LongformerForSequenceClassification, LongformerForQuestionAnswering, \
-    pipeline
-import torch
+from transformers import pipeline
 
-# Load Longformer tokenizer and models
-tokenizer = LongformerTokenizer.from_pretrained("allenai/longformer-base-4096")
-sentiment_model = LongformerForSequenceClassification.from_pretrained("allenai/longformer-base-4096")
-qa_model = LongformerForQuestionAnswering.from_pretrained("allenai/longformer-base-4096")
+# Initialize the sentiment analysis and question answering pipelines
+sentiment_analysis_pipeline = pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment")
+question_answering_pipeline = pipeline("question-answering", model="allenai/longformer-base-4096")
 
-# Sentiment analysis pipeline using Longformer
-sentiment_analysis_pipeline = pipeline("sentiment-analysis", model=sentiment_model, tokenizer=tokenizer)
+# Questions for extracting specific information
+questions = [
+    "How relevant is the content to the main topic?",
+    "How clear is the writing and presentation?",
+    "How deep is the analysis provided?",
+    "How novel are the insights or findings?",
+    "How effectively is a compartmental mathematical model used?"
+]
 
-# Question answering pipeline using Longformer
-question_answering_pipeline = pipeline("question-answering", model=qa_model, tokenizer=tokenizer)
+# Sliding window function for long texts
+def sliding_window(text, window_size=4096, overlap=512):
+    tokens = text.split()
+    for start in range(0, len(tokens), window_size - overlap):
+        yield ' '.join(tokens[start:start + window_size])
 
-
-# Function to score an article based on its abstract
+# Function to score each article
 def score_article(abstract):
-    if not abstract or pd.isna(abstract):
+    if not abstract or abstract.strip() == '':
         return None
+    
+    # Perform sentiment analysis
+    sentiment_scores = []
+    for chunk in sliding_window(abstract):
+        sentiment = sentiment_analysis_pipeline(chunk)
+        sentiment_scores.extend([score['label'] for score in sentiment])
+    
+    # Assuming sentiment labels are 'POSITIVE' and 'NEGATIVE'
+    positive_score = sentiment_scores.count('POSITIVE') / len(sentiment_scores) if sentiment_scores else 0
 
-    # Convert abstract to string
-    abstract = str(abstract)
+    # Perform question answering
+    answers = []
+    for chunk in sliding_window(abstract):
+        for question in questions:
+            answer = question_answering_pipeline(question=question, context=chunk)['answer']
+            try:
+                answers.append(float(answer))
+            except ValueError:
+                answers.append(0)
 
-    # Tokenize the abstract using Longformer
-    inputs = tokenizer(abstract, return_tensors="pt", truncation=True, max_length=4096)
+    # Calculate the final score
+    if answers:
+        relevance_score = sum(answers[0::5]) / len(answers[0::5])
+        clarity_score = sum(answers[1::5]) / len(answers[1::5])
+        depth_score = sum(answers[2::5]) / len(answers[2::5])
+        novelty_score = sum(answers[3::5]) / len(answers[3::5])
+        model_usage_score = sum(answers[4::5]) / len(answers[4::5])
 
-    # Analyze sentiment (optional)
-    sentiment = sentiment_analysis_pipeline(abstract)[0]['label']
+        # Weight each criterion based on importance
+        weights = {
+            "relevance": 2,
+            "clarity": 2,
+            "depth": 2,
+            "novelty": 2,
+            "model_usage": 2
+        }
 
-    # Ask questions to extract specific information
-    questions = [
-        "How relevant is the content to the main topic?",
-        "How clear is the writing and presentation?",
-        "How deep is the analysis provided?",
-        "How novel are the insights or findings?",
-        "How effectively is a compartmental mathematical model used?"
-    ]
-    answers = [question_answering_pipeline(question=q, context=abstract)['answer'] for q in questions]
-
-    # Convert answers to scores (assuming answers are on a scale of 1 to 10)
-    try:
-        relevance_score = float(answers[0])
-        clarity_score = float(answers[1])
-        depth_score = float(answers[2])
-        novelty_score = float(answers[3])
-        model_usage_score = float(answers[4])
-    except ValueError:
-        # If the answers are not directly convertible to float, set them to a default score (e.g., 5)
-        relevance_score = clarity_score = depth_score = novelty_score = model_usage_score = 5.0
-
-    # Weight each criterion based on importance
-    weights = {
-        "relevance": 2,
-        "clarity": 2,
-        "depth": 2,
-        "novelty": 2,
-        "model_usage": 2
-    }
-
-    # Calculate overall score
-    overall_score = (relevance_score * weights["relevance"] +
-                     clarity_score * weights["clarity"] +
-                     depth_score * weights["depth"] +
-                     novelty_score * weights["novelty"] +
-                     model_usage_score * weights["model_usage"]) / sum(weights.values())
+        overall_score = (relevance_score * weights["relevance"] +
+                         clarity_score * weights["clarity"] +
+                         depth_score * weights["depth"] +
+                         novelty_score * weights["novelty"] +
+                         model_usage_score * weights["model_usage"]) / sum(weights.values())
+    else:
+        overall_score = 0
 
     return overall_score
 
+# Load your CSV file
+input_csv = "papers_V4.csv"
+df = pd.read_csv(input_csv)
 
-# Load the CSV with the abstracts
-input_csv = 'papers_V4.csv'
-df = pd.read_csv(input_csv, low_memory=False)
-
-# Convert the 'abstract' column to strings
-df['abstract'] = df['abstract'].astype(str)
-
-# Score each article based on the abstract, skipping rows without abstracts
+# Apply the scoring function to each abstract
 df['score'] = df['abstract'].apply(lambda x: score_article(x) if pd.notna(x) and x.strip() != '' else None)
 
-# Select the desired columns
-output_df = df[['title', 'abstract', 'publicationDate', 'openAccessPdf_url', 'citation_bibtex', 'score']]
-
-# Save the result to a new CSV file
-output_csv = 'sentiment_score.csv'
+# Select the required columns and create the output CSV file
+output_columns = ['title', 'abstract', 'publicationDate', 'openAccessPdf_url', 'citation_bibtex', 'score']
+output_df = df[output_columns]
+output_csv = "sentiment_score.csv"
 output_df.to_csv(output_csv, index=False)
-
-print(f"Sentiment scores have been saved to {output_csv}")
