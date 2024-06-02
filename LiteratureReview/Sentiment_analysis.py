@@ -1,8 +1,13 @@
 import pandas as pd
 from transformers import pipeline
+import spacy
+import textstat
 
 # Load the sentiment analysis pipeline
 sentiment_analysis_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+
+# Load the spaCy model
+nlp = spacy.load("en_core_web_sm")
 
 # Example questions for extracting specific information
 questions = [
@@ -15,18 +20,6 @@ questions = [
 
 # Sliding window function for long texts
 def sliding_window(text, tokenizer, window_size, overlap):
-    """
-    Generate chunks of text using a sliding window approach.
-
-    Args:
-        text (str): The input text.
-        tokenizer: The tokenizer used to tokenize the text.
-        window_size (int): The size of each chunk in tokens.
-        overlap (int): The number of overlapping tokens between chunks.
-
-    Returns:
-        List[str]: A list of text chunks.
-    """
     tokens = tokenizer.tokenize(text)
     chunks = []
     for i in range(0, len(tokens), window_size - overlap):
@@ -36,17 +29,25 @@ def sliding_window(text, tokenizer, window_size, overlap):
         chunks.append(tokenizer.convert_tokens_to_string(chunk))
     return chunks
 
+# Function to evaluate relevance based on keywords
+def evaluate_relevance(abstract, keywords):
+    tokens = abstract.split()
+    keyword_count = sum(1 for token in tokens if token.lower() in keywords)
+    relevance_score = keyword_count / len(tokens)
+    return relevance_score
+
+# Function to evaluate clarity
+def evaluate_clarity(abstract):
+    doc = nlp(abstract)
+    sentence_lengths = [len(sent) for sent in doc.sents]
+    avg_sentence_length = sum(sentence_lengths) / len(sentence_lengths)
+
+    readability_score = textstat.flesch_reading_ease(abstract)
+    clarity_score = (readability_score + avg_sentence_length) / 2
+    return clarity_score
+
+# Function to score articles
 def score_article(abstract, questions):
-    """
-    Scores an article using sentiment analysis and question answering logic.
-
-    Args:
-        abstract (str): The article text to be scored.
-        questions (List[str]): A list of questions for additional scoring criteria.
-
-    Returns:
-        float: The final score of the article.
-    """
     if not abstract or abstract.strip() == '':
         return None
 
@@ -54,21 +55,17 @@ def score_article(abstract, questions):
     sentiment_scores = []
     chunks = sliding_window(abstract, sentiment_analysis_pipeline.tokenizer, window_size=512, overlap=50)
     for chunk in chunks:
-        sentiment = sentiment_analysis_pipeline(chunk[:512])  # Truncate if chunk exceeds maximum sequence length
+        sentiment = sentiment_analysis_pipeline(chunk[:512])
         sentiment_scores.extend([score['label'] for score in sentiment])
 
-    # Assuming sentiment labels are 'POSITIVE' and 'NEGATIVE'
     positive_score = sentiment_scores.count('POSITIVE') / len(sentiment_scores) if sentiment_scores else 0
 
-    # Placeholder for question answering logic (replace with actual logic if needed)
-    answers = [0.5] * len(questions)  # Placeholder scores for each question
-
-    # Calculate the final score
-    relevance_score = answers[0]
-    clarity_score = answers[1]
-    depth_score = answers[2]
-    novelty_score = answers[3]
-    model_usage_score = answers[4]
+    # Evaluate each criterion
+    relevance_score = evaluate_relevance(abstract, keywords)
+    clarity_score = evaluate_clarity(abstract)
+    depth_score = 0.5  # Placeholder
+    novelty_score = 0.5  # Placeholder
+    model_usage_score = 0.5  # Placeholder
 
     # Weight each criterion based on importance
     weights = {
@@ -90,6 +87,8 @@ def score_article(abstract, questions):
 # Load your CSV file
 input_csv = "papers_V4.csv"
 df = pd.read_csv(input_csv, low_memory=False)
+
+keywords = ["coronavirus", "COVID-19", "SIR", "SEIR", "SLIR", "compartmental model", "deterministic model", "SIRC"]
 
 # Apply the scoring function to each abstract
 df['score'] = df['abstract'].apply(lambda x: score_article(x, questions) if pd.notna(x) and x.strip() != '' else None)
