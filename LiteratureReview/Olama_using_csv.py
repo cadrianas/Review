@@ -90,7 +90,7 @@ def main():
     # Output directory and CSV file path
     output_dir = "outputs"
     os.makedirs(output_dir, exist_ok=True)  # Create directory if it doesn't exist
-    output_csv_path = os.path.join(output_dir, "output_ollama.csv")
+    output_csv_path = os.path.join(output_dir, "output_ollama_csv.csv")
 
     # Connect to Ollama server
     ollama_client = ollama.Client()
