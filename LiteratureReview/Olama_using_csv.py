@@ -77,7 +77,7 @@ def main():
     logging.info("Script started")
 
     # Input CSV file path containing BibTeX entries and abstracts
-    input_csv_path = "input_bibtex.csv"
+    input_csv_path = "papers_V4.csv"
 
     # Output directory and CSV file path
     output_dir = "outputs"
