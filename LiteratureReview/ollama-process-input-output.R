@@ -1,6 +1,6 @@
 library(ollamar)
 
-process_bib_file = function(infile, OUTPUT) {
+process_bib_file_silly = function(infile, OUTPUT) {
   command_line = paste0("touch '",
                         OUTPUT,
                         infile, "'")
