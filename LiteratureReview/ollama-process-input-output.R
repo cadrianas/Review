@@ -1,9 +1,7 @@
 library(ollamar)
+library(bibtex)
 
-process_bib_file_silly = function(infile, OUTPUT) {
-  command_line = paste0("touch '",
-                        OUTPUT,
-                        infile, "'")
+process_bib_file_ollama = function(infile, INPUT, OUTPUT) {
   # Need to check if local arborescence exists. So first decompose 
   # file name with local arborescence info
   tmp = strsplit(infile, "/")[[1]]
@@ -20,8 +18,26 @@ process_bib_file_silly = function(infile, OUTPUT) {
       dir.create(curr_dir)
     }
   }
-  # Issue command
-  system(command_line)
+  # Now read in the bib file
+  bib_entry = read.bib(paste0(INPUT, infile))
+  # Is there an abstract? If not, don't do anything.
+  abstract = bib_entry[1]$abstract
+  if (!is.null(abstract)) {
+    model = "llama2:13b"
+    authors = bib_entry[1]$author
+    base_message = "Summarize the following abstract in 200 words or less; do not say anything but the summary. "
+    message = paste0(base_message, 
+                     "Abstract: ", abstract)
+    output = generate(model = model,
+                      prompt = message,
+                      stream = FALSE,
+                      output = "df")
+    output = output$response
+  } else {
+    output = "No abstract in the bib file"
+  }
+  # Write output to file
+  writeLines(output, paste0(OUTPUT, infile))
 }
 
 INPUT = "/home/jarino/NAS-small-DATA/adriana-llm-reviews/bib-files"
@@ -66,8 +82,10 @@ while (TRUE) {
                       nrow(to_process_df), 
                       " files left to process, processing file number ",
                       idx))
-    infile = to_process_df$subdir_fn[idx]
+    # Use for debugging (to use in the function)
+    # infile = to_process_df$subdir_fn[idx]
     # Process
-    process_bib_file_silly(to_process_df$subdir_fn[idx], OUTPUT)
+    process_bib_file_ollama(to_process_df$subdir_fn[idx], 
+                            INPUT, OUTPUT)
   }
 }
