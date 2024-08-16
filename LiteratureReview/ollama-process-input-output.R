@@ -24,8 +24,8 @@ process_bib_file = function(infile, OUTPUT) {
   system(command_line)
 }
 
-INPUT = "/home/jarino/DATA_NAS_small/adriana-llm-reviews/bib-files"
-OUTPUT = "/home/jarino/OUTPUT_NAS_small/adriana-llm-reviews/bib-files"
+INPUT = "/home/jarino/NAS-small-DATA/adriana-llm-reviews/bib-files"
+OUTPUT = "/home/jarino/NAS-small-OUTPUT/adriana-llm-reviews/bib-files"
 
 list_files_input = data.frame(
   fqfn = list.files(INPUT, 
