@@ -68,6 +68,6 @@ while (TRUE) {
                       idx))
     infile = to_process_df$subdir_fn[idx]
     # Process
-    process_bib_file(to_process_df$subdir_fn[idx], OUTPUT)
+    process_bib_file_silly(to_process_df$subdir_fn[idx], OUTPUT)
   }
 }
