@@ -1,9 +1,9 @@
 import os
-import csv
 import pathlib
 import time
 import ollama
 from requests.exceptions import RequestException, Timeout
+import random
 
 # Function to check if the SIR model is mentioned
 def mentions_SIR(content):
@@ -58,50 +58,68 @@ def generate_scoring(text_content, max_retries=5, backoff_factor=1, timeout=10):
         print(f"Error generating scoring: {e}")
         return 0, 0, 0, 0, 0
 
-# Define folder name containing text files
-folder_name = 'pdfs'
+# Function to process a single text file
+def process_text_file(file_path, output_base_dir, input_base_dir):
+    try:
+        # Read the text content
+        with open(file_path, 'r', encoding='utf-8') as file:
+            text_content = file.read()
 
-# Define output folder and CSV file
-output_folder = 'outputs'
-output_csv_filename = 'scoring.csv'
+        # Generate scores
+        relevance_score, clarity_score, depth_score, novelty_score, final_score = generate_scoring(text_content)
 
-# Ensure output directory exists
-os.makedirs(output_folder, exist_ok=True)
-output_csv_path = pathlib.Path(output_folder) / output_csv_filename
+        # Determine the output path
+        relative_path = file_path.relative_to(input_base_dir)
+        output_path = output_base_dir / relative_path.with_suffix('.csv')
 
-# Initialize the CSV file if it doesn't exist
-if not os.path.exists(output_csv_path):
-    with open(output_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['File Name', 'Relevance Score', 'Clarity Score', 'Depth Score', 'Novelty Score', 'Final Score']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+        # Ensure the output directory exists
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
-# Iterate over text files in the folder
-folder_path = pathlib.Path(folder_name)
-text_files = [f for f in os.listdir(folder_path) if f.endswith('.txt')]
+        # Write the results to a CSV file
+        with open(output_path, 'w', newline='', encoding='utf-8') as csvfile:
+            fieldnames = ['File Name', 'Relevance Score', 'Clarity Score', 'Depth Score', 'Novelty Score', 'Final Score']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerow({
+                'File Name': file_path.name,
+                'Relevance Score': relevance_score,
+                'Clarity Score': clarity_score,
+                'Depth Score': depth_score,
+                'Novelty Score': novelty_score,
+                'Final Score': final_score
+            })
 
-# Process each file
-for file_name in text_files:
-    # Read text content from the file
-    with open(folder_path / file_name, 'r', encoding='utf-8') as file:
-        text_content = file.read()
+        print(f"Processed and saved results for {file_path}")
 
-    # Generate scoring
-    relevance_score, clarity_score, depth_score, novelty_score, final_score = generate_scoring(text_content)
+    except Exception as e:
+        print(f"Failed to process {file_path}: {e}")
 
-    # Append results to the CSV file immediately after processing each file
-    with open(output_csv_path, 'a', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['File Name', 'Relevance Score', 'Clarity Score', 'Depth Score', 'Novelty Score', 'Final Score']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writerow({
-            'File Name': file_name,
-            'Relevance Score': relevance_score,
-            'Clarity Score': clarity_score,
-            'Depth Score': depth_score,
-            'Novelty Score': novelty_score,
-            'Final Score': final_score
-        })
+# Main function to process all text files
+def process_all_files(input_base_dir, output_base_dir):
+    input_base_dir = pathlib.Path(input_base_dir)
+    output_base_dir = pathlib.Path(output_base_dir)
 
-    print(f"Processed and saved results for {file_name}")
+    # Get list of all input files
+    all_input_files = list(input_base_dir.rglob('*.txt'))
+    processed_files = set(file.relative_to(output_base_dir).with_suffix('.txt') for file in output_base_dir.rglob('*.csv'))
 
-print("Scoring for text files has been written to:", output_csv_path)
+    # Determine which files need processing
+    files_to_process = [file for file in all_input_files if file.relative_to(input_base_dir) not in processed_files]
+
+    while files_to_process:
+        # Pick a random file to process
+        file_to_process = random.choice(files_to_process)
+        process_text_file(file_to_process, output_base_dir, input_base_dir)
+
+        # Update the list of files to process
+        files_to_process = [file for file in all_input_files if file.relative_to(input_base_dir) not in processed_files]
+
+    print("All files have been processed.")
+
+# Define input and output directories
+INPUT_DIR = '/pdfs'
+OUTPUT_DIR = '/Scoring'
+
+# Process all text files
+process_all_files(INPUT_DIR, OUTPUT_DIR)
+
