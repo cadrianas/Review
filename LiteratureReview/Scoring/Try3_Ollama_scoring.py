@@ -59,10 +59,10 @@ def generate_scoring(text_content, max_retries=5, backoff_factor=1, timeout=10):
         return 0, 0, 0, 0, 0
 
 # Define folder name containing text files
-folder_name = 'pdfs'
+folder_name = '~/pdfs'
 
 # Define output folder and CSV file
-output_folder = 'outputs'
+output_folder = '~/Scoring'
 output_csv_filename = 'scoring.csv'
 
 # Ensure output directory exists
