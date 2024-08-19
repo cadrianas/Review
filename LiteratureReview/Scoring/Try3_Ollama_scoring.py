@@ -85,11 +85,11 @@ def identify_model(text):
     return "Model not identified"
 
 # Ensure these variables are initialized
-text_files = os.listdir('~/github/Review/LiteratureReview/pdfs')  # Replace with your folder path
+text_files = os.listdir('/home/cadrianas/github/Review/LiteratureReview/pdfs')  # Replace with your folder path
 files_processed = 0
 # Set the maximum number of files to process to the total number of files in the directory
 max_files_to_process = len(text_files)
-folder_path = pathlib.Path('~/github/Review/LiteratureReview/pdfs')  # Replace with your folder path
+folder_path = pathlib.Path('/home/cadrianas/github/Review/LiteratureReview/pdfs')  # Replace with your folder path
 output_csv_path = 'outputs/scoring.csv'  # Define your output CSV file
 
 # Main processing loop
