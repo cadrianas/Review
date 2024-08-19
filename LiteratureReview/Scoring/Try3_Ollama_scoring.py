@@ -90,7 +90,7 @@ files_processed = 0
 # Set the maximum number of files to process to the total number of files in the directory
 max_files_to_process = len(text_files)
 folder_path = pathlib.Path('pdfs')  # Replace with your folder path
-output_csv_path = 'Scoring/scoring.csv'  # Define your output CSV file
+output_csv_path = 'outputs/scoring.csv'  # Define your output CSV file
 
 # Main processing loop
 for file_name in text_files:
