@@ -48,7 +48,7 @@ def generate_scoring(text_content, max_retries=5, backoff_factor=1, timeout=10):
         novelty_prompt = f"Assess the novelty of the following text on a scale from 0 to 10:\n\n{text_content}"
         novelty_response = analyze_with_ollama(ollama_client, novelty_prompt, max_retries, backoff_factor, timeout)
 
-        summary_prompt = f"Summarize the following abstract in 200 words or less; do not say anything but the summary:\n\n{text_content}"
+        summary_prompt = f"Summarize the following text in 200 words or less; do not say anything but the summary:\n\n{text_content}"
         summary_response = analyze_with_ollama(ollama_client, summary_prompt, max_retries, backoff_factor, timeout)
 
         return relevance_response, clarity_response, depth_response, novelty_response, summary_response
