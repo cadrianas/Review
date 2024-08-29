@@ -103,36 +103,47 @@ while files_processed < len(text_files):
     # Generate scoring
     relevance_response, clarity_response, depth_response, novelty_response, summary_response = generate_scoring(text_content)
 
-    # Handle the case where scoring could not be generated but still allow the summary
-    if relevance_response is None:
-        print(f"Scoring error in file {random_file}. Attempting to retrieve summary...")
-
-    if summary_response is None:
-        print(f"Summary generation also failed for {random_file}.")
-        continue  # Skip the file if both scoring and summary fail
-
     # Identify the model in the text
     identified_model = identify_model(text_content)
 
     # Define output CSV path per file
     output_csv_path = output_folder_path / f'scoring_{random_file}.csv'
 
-    # Save the results to a CSV file, including partial results
-    with open(output_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['File Name', 'Relevance Response', 'Clarity Response', 'Depth Response', 'Novelty Response', 'Summary', 'Identified Model']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerow({
-            'File Name': random_file,
-            'Relevance Response': relevance_response if relevance_response is not None else 'Scoring failed',
-            'Clarity Response': clarity_response if clarity_response is not None else 'Scoring failed',
-            'Depth Response': depth_response if depth_response is not None else 'Scoring failed',
-            'Novelty Response': novelty_response if novelty_response is not None else 'Scoring failed',
-            'Summary': summary_response if summary_response is not None else 'Summary failed',
-            'Identified Model': identified_model
-        })
+    # Determine if both scoring and summary failed
+    if relevance_response is None and summary_response is None:
+        # Write a CSV indicating that both scoring and summary failed
+        with open(output_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+            fieldnames = ['File Name', 'Relevance Response', 'Clarity Response', 'Depth Response', 'Novelty Response', 'Summary', 'Identified Model']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerow({
+                'File Name': random_file,
+                'Relevance Response': 'Scoring and summary failed',
+                'Clarity Response': 'Scoring and summary failed',
+                'Depth Response': 'Scoring and summary failed',
+                'Novelty Response': 'Scoring and summary failed',
+                'Summary': 'Scoring and summary failed',
+                'Identified Model': identified_model
+            })
+    else:
+        # Save the results to a CSV file, including partial results
+        with open(output_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+            fieldnames = ['File Name', 'Relevance Response', 'Clarity Response', 'Depth Response', 'Novelty Response', 'Summary', 'Identified Model']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerow({
+                'File Name': random_file,
+                'Relevance Response': relevance_response if relevance_response is not None else 'Scoring failed',
+                'Clarity Response': clarity_response if clarity_response is not None else 'Scoring failed',
+                'Depth Response': depth_response if depth_response is not None else 'Scoring failed',
+                'Novelty Response': novelty_response if novelty_response is not None else 'Scoring failed',
+                'Summary': summary_response if summary_response is not None else 'Summary failed',
+                'Identified Model': identified_model
+            })
 
     files_processed += 1
     print(f"Processed {files_processed}/{len(text_files)}: {random_file}")
+
+print(f"Processing complete. Total files processed: {files_processed}")
 
 print(f"Processing complete. Total files processed: {files_processed}")
