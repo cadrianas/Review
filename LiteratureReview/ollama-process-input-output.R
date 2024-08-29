@@ -40,8 +40,8 @@ process_bib_file_ollama = function(infile, INPUT, OUTPUT) {
   writeLines(output, paste0(OUTPUT, infile))
 }
 
-INPUT = "/home/jarino/NAS-small-DATA/adriana-llm-reviews/bib-files"
-OUTPUT = "/home/jarino/NAS-small-OUTPUT/adriana-llm-reviews/bib-files"
+INPUT = "/home/cadrianas/NAS-small-DATA/adriana-llm-reviews/bib-files"
+OUTPUT = "/home/cadrianas/NAS-small-OUTPUT/adriana-llm-reviews/bib-files"
 
 list_files_input = data.frame(
   fqfn = list.files(INPUT, 
