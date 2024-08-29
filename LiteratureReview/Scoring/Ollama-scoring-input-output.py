@@ -2,7 +2,7 @@ import os
 import csv
 import pathlib
 import time
-import re  # Ensure regex is imported for pattern matching
+import re
 import ollama
 import random
 from requests.exceptions import RequestException
@@ -15,13 +15,12 @@ def mentions_SIR(content):
 def analyze_with_ollama(ollama_client, prompt, max_retries=5, backoff_factor=1, timeout=10):
     for attempt in range(max_retries):
         try:
-            # Directly call the Ollama API
             response = ollama_client.chat(
                 model='llama3',
                 messages=[{'role': 'user', 'content': prompt}]
             )
             response_text = response['message']['content'].strip()
-            return response_text  # Return the full descriptive response
+            return response_text
         except (RequestException, TimeoutError) as e:
             print(f"Request error: {e}. Retrying in {backoff_factor * (2 ** attempt)} seconds...")
             time.sleep(backoff_factor * (2 ** attempt))
@@ -30,14 +29,13 @@ def analyze_with_ollama(ollama_client, prompt, max_retries=5, backoff_factor=1, 
             print(f"Unexpected error: {e}.")
             return None
     print("Max retries reached. Unable to generate score.")
-    return None  # Return None if maximum retries are reached
+    return None
 
 # Function to generate scoring and summary using Ollama
 def generate_scoring(text_content, max_retries=5, backoff_factor=1, timeout=10):
     try:
         ollama_client = ollama.Client()
 
-        # Define the prompts for scoring
         relevance_prompt = f"Assess the relevance of the following text:\n\n{text_content}"
         relevance_response = analyze_with_ollama(ollama_client, relevance_prompt, max_retries, backoff_factor, timeout)
 
@@ -50,7 +48,6 @@ def generate_scoring(text_content, max_retries=5, backoff_factor=1, timeout=10):
         novelty_prompt = f"Assess the novelty of the following text on a scale from 0 to 10:\n\n{text_content}"
         novelty_response = analyze_with_ollama(ollama_client, novelty_prompt, max_retries, backoff_factor, timeout)
 
-        # Generate summary prompt
         summary_prompt = f"Summarize the following abstract in 200 words or less; do not say anything but the summary:\n\n{text_content}"
         summary_response = analyze_with_ollama(ollama_client, summary_prompt, max_retries, backoff_factor, timeout)
 
@@ -62,7 +59,6 @@ def generate_scoring(text_content, max_retries=5, backoff_factor=1, timeout=10):
 
 # Function to identify the model based on the text content
 def identify_model(text):
-    # Define patterns or keywords to search for
     model_patterns = [
         ('Logistic Regression', r'Logistic\s*Regression'),
         ('Random Forest', r'Random\s*Forest'),
@@ -71,10 +67,8 @@ def identify_model(text):
         ('ARIMA', r'ARIMA'),
         ('Stochastic', r'stochastic'),
         ('Agent Based', r'Agent\s*Based')
-        # Add more patterns if needed
     ]
 
-    # Search for patterns in the text
     for model, pattern in model_patterns:
         if re.search(pattern, text, re.IGNORECASE):
             return model
@@ -84,20 +78,34 @@ def identify_model(text):
 # Set input and output directories
 input_folder_path = pathlib.Path('/home/cadrianas/NAS-small-DATA/adriana-llm-reviews/pdfs/')
 output_folder_path = pathlib.Path('/home/cadrianas/NAS-small-OUTPUT/adriana-llm-reviews/pdfs/')
+log_file_path = output_folder_path / 'processed_files.log'
 
 # Ensure output folder exists
 output_folder_path.mkdir(parents=True, exist_ok=True)
 
+# Load processed files from the log file
+if log_file_path.exists():
+    with open(log_file_path, 'r', encoding='utf-8') as log_file:
+        processed_files = set(line.strip() for line in log_file)
+else:
+    processed_files = set()
+
 # List all files in the input directory
-text_files = os.listdir(input_folder_path)
+text_files = [f for f in os.listdir(input_folder_path) if f.endswith('.txt')]
 files_processed = 0
 
-# Process a random file and write a CSV for each processed file
+# Process files
 while files_processed < len(text_files):
     random_file = random.choice(text_files)
     text_files.remove(random_file)  # Ensure the file is not picked again
 
-    with open(input_folder_path / random_file, 'r', encoding='utf-8') as file:
+    if random_file in processed_files:
+        continue  # Skip already processed files
+
+    file_path = input_folder_path / random_file
+    file_stem = file_path.stem
+
+    with open(file_path, 'r', encoding='utf-8') as file:
         text_content = file.read()
 
     # Generate scoring
@@ -107,7 +115,7 @@ while files_processed < len(text_files):
     identified_model = identify_model(text_content)
 
     # Define output CSV path per file
-    output_csv_path = output_folder_path / f'scoring_{random_file}.csv'
+    output_csv_path = output_folder_path / f'scoring_{file_stem}.csv'
 
     # Determine if both scoring and summary failed
     if relevance_response is None and summary_response is None:
@@ -117,7 +125,7 @@ while files_processed < len(text_files):
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerow({
-                'File Name': random_file,
+                'File Name': file_stem,
                 'Relevance Response': 'Scoring and summary failed',
                 'Clarity Response': 'Scoring and summary failed',
                 'Depth Response': 'Scoring and summary failed',
@@ -132,7 +140,7 @@ while files_processed < len(text_files):
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerow({
-                'File Name': random_file,
+                'File Name': file_stem,
                 'Relevance Response': relevance_response if relevance_response is not None else 'Scoring failed',
                 'Clarity Response': clarity_response if clarity_response is not None else 'Scoring failed',
                 'Depth Response': depth_response if depth_response is not None else 'Scoring failed',
@@ -141,9 +149,12 @@ while files_processed < len(text_files):
                 'Identified Model': identified_model
             })
 
+    # Log the processed file
+    with open(log_file_path, 'a', encoding='utf-8') as log_file:
+        log_file.write(f"{random_file}\n")
+
     files_processed += 1
-    print(f"Processed {files_processed}/{len(text_files)}: {random_file}")
+    print(f"Processed {files_processed}/{len(text_files)}: {file_stem}")
 
 print(f"Processing complete. Total files processed: {files_processed}")
 
-print(f"Processing complete. Total files processed: {files_processed}")
