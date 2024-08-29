@@ -82,8 +82,8 @@ def identify_model(text):
     return "Model not identified"
 
 # Set input and output directories
-input_folder_path = pathlib.Path('/mnt/data/cadrianas/NAS-small-DATA/adriana-llm-reviews/pdfs/')
-output_folder_path = pathlib.Path('/mnt/data/cadrianas/NAS-small-OUTPUT/adriana-llm-reviews/pdfs/')
+input_folder_path = pathlib.Path('/home/cadrianas/NAS-small-DATA/adriana-llm-reviews/pdfs/')
+output_folder_path = pathlib.Path('/home/cadrianas/NAS-small-OUTPUT/adriana-llm-reviews/pdfs/')
 
 # Ensure output folder exists
 output_folder_path.mkdir(parents=True, exist_ok=True)
