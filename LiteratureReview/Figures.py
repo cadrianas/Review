@@ -34,7 +34,7 @@ bars = plt.bar(range(len(monthly_frequency)), monthly_frequency, color='skyblue'
 
 # Customizing x-axis ticks
 plt.title('Monthly Frequency of Publications')
-plt.xlabel('Month-Year')
+plt.xlabel('Year-Month')
 plt.ylabel('Frequency')
 
 # Handling x-tick labels

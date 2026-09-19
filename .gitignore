@@ -1,5 +1,81 @@
-### JabRef ###
-# JabRef database specific files for persistence, not relevant to persist
+# Local environments, credentials, and caches
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+*service-account*.json
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.cache/
+.ipynb_checkpoints/
+
+# Operating system, IDE, and R session files
+.DS_Store
+._*
+.idea/
+.vscode/
+.Rproj.user/
+.Rhistory
+.RData
+*.Rproj
+
+# JabRef and editor backups
 *.sav
 *.bak
-.Rproj.user
+*.swp
+*~
+
+# Downloaded literature and extracted full text (not a redistribution package)
+/LiteratureReview/Articles used/
+/LiteratureReview/pdfs/
+/LiteratureReview/PDF/
+/LiteratureReview/Bib-files/
+/LiteratureReview/Bib files/
+*.zip
+*.tar
+*.tar.gz
+
+# Bulk retrieval data and intermediate tabular outputs
+*.csv
+*.tsv
+*.jsonl
+/outputs/
+/LiteratureReview/outputs/
+/LiteratureReview/Scoring/outputs/
+/LiteratureReview/LiteratureRieview/
+/LiteratureReview/summary.txt
+
+# Scratch scripts; preserve substantive research and experiment scripts
+/LiteratureReview/Test.py
+/LiteratureReview/Test_V2.py
+/LiteratureReview/Test_V3.py
+/LiteratureReview/making_test_csv.py
+/LiteratureReview/Gemini_api_LLM.py
+
+# Generated documents; explicitly retain the review PDF
+*.pdf
+!/LiteratureReview/output/pdf/covid19_modelling_review.pdf
+/LiteratureReview/output/*
+!/LiteratureReview/output/pdf/
+/LiteratureReview/output/pdf/*
+!/LiteratureReview/output/pdf/covid19_modelling_review.pdf
+manuscript.tex
+manuscript.bbl
+manuscript.blg
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.fls
+*.fdb_latexmk
+
+# Local editorial and public-release preparation notes
+editorial_notes.md
+/LiteratureReview/public-preparation/
