@@ -83,6 +83,6 @@ The public source package excludes downloaded journal PDFs, extracted article fu
 
 The ignore rules also exclude local environments, editor settings, caches, credentials, and build intermediates. Ignore rules do not remove files already committed or their historical versions. A public release should therefore use a reviewed clean export or a separately reviewed history cleanup.
 
-## Citation and reuse
 
-Until a stable preprint identifier is available, cite the manuscript title and link to the repository, identifying the commit or release consulted. No software or manuscript reuse licence has yet been selected. Public availability alone does not supply a reuse licence; third-party material retains its own terms.
+
+
